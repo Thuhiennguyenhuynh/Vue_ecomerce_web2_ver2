@@ -10,6 +10,11 @@
                   <h1>Đăng Nhập Admin</h1>
                   <p class="text-body-secondary">Đăng nhập vào hệ thống quản trị</p>
 
+                  <CAlert v-if="errorMessage" color="danger" class="mb-4">
+                    <strong>LỖI CHI TIẾT:</strong> <br/>
+                    {{ errorMessage }}
+                  </CAlert>
+
                   <CInputGroup class="mb-3">
                     <CInputGroupText>
                       <CIcon icon="cil-user" />
@@ -47,7 +52,7 @@
                   <CRow>
                     <CCol :xs="6">
                       <CButton color="primary" type="submit" class="px-4" :disabled="loading">
-                        <CSpinner v-if="loading" size="sm" />
+                        <CSpinner v-if="loading" size="sm" class="me-2" />
                         {{ loading ? 'Đang đăng nhập...' : 'Đăng Nhập' }}
                       </CButton>
                     </CCol>
@@ -87,12 +92,14 @@ import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
 import { useVuelidate } from '@vuelidate/core'
 import { required, email, minLength } from '@vuelidate/validators'
+import axios from 'axios' // Import thêm axios để test trực tiếp
 
 const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToast()
 
 const loading = ref(false)
+const errorMessage = ref('') // Biến hứng lỗi hiển thị ra màn hình
 
 const form = reactive({
   email: '',
@@ -100,14 +107,8 @@ const form = reactive({
 })
 
 const rules = {
-  email: {
-    required,
-    email
-  },
-  password: {
-    required,
-    minLength: minLength(6)
-  }
+  email: { required, email },
+  password: { required, minLength: minLength(6) }
 }
 
 const v$ = useVuelidate(rules, form)
@@ -117,16 +118,51 @@ const handleLogin = async () => {
   if (!isValid) return
 
   loading.value = true
+  errorMessage.value = '' // Xóa lỗi cũ
 
-  const result = await authStore.login(form.email, form.password)
+  try {
+    // TẠM THỜI GỌI TRỰC TIẾP AXIOS ĐỂ HỨNG TRỌN VẸN LỖI
+    console.log("Đang gửi request login tới backend...")
 
-  loading.value = false
+    // Gọi thẳng vào user-service (port 8811) giống như lúc đăng ký để né lỗi Gateway
+    const response = await axios.post('http://localhost:8811/users/login', {
+      userName: form.email,
+      password: form.password
+    })
 
-  if (result.success) {
+    console.log("Response thành công:", response)
+
+    // Nếu API chạy ngon, ta sẽ gọi authStore sau để set token
+    await authStore.login(form.email, form.password)
+
     toast.success('Đăng nhập thành công!')
     router.push('/dashboard')
-  } else {
-    toast.error(result.message)
+
+  } catch (error) {
+    // IN FULL LỖI RA CONSOLE VÀ MÀN HÌNH ĐỂ DEBUG
+    console.error('LỖI ĐĂNG NHẬP CHI TIẾT:', error.response || error)
+
+    if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+
+      if (status === 500) {
+        const serverMsg = data.message || JSON.stringify(data)
+        errorMessage.value = `[Status 500] Backend sập khi xử lý. Chi tiết trả về: ${serverMsg}`
+      } else if (status === 401) {
+        errorMessage.value = '[Status 401] Sai email hoặc mật khẩu.'
+      } else {
+        errorMessage.value = `[Status ${status}] Dữ liệu trả về: ${JSON.stringify(data)}`
+      }
+    } else if (error.request) {
+      errorMessage.value = 'Không kết nối được Backend. Server (8811) đã chạy chưa?'
+    } else {
+      errorMessage.value = error.message
+    }
+
+    toast.error('Đăng nhập thất bại!')
+  } finally {
+    loading.value = false
   }
 }
 </script>

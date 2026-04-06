@@ -1,5 +1,5 @@
 import { h, resolveComponent } from 'vue'
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 import DefaultLayout from '@/layouts/DefaultLayout'
 import { useAuthStore } from '@/stores/auth'
@@ -9,6 +9,11 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: () => import('@/views/pages/Login.vue'),
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/pages/Register.vue'),
   },
   {
     path: '/',
@@ -325,7 +330,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior() {
     // always scroll to top

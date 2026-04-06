@@ -121,45 +121,20 @@ const handleLogin = async () => {
   errorMessage.value = '' // Xóa lỗi cũ
 
   try {
-    // TẠM THỜI GỌI TRỰC TIẾP AXIOS ĐỂ HỨNG TRỌN VẸN LỖI
-    console.log("Đang gửi request login tới backend...")
+    // Gọi authStore.login() để xử lý authentication
+    const result = await authStore.login(form.email, form.password)
 
-    // Gọi thẳng vào user-service (port 8811) giống như lúc đăng ký để né lỗi Gateway
-    const response = await axios.post('http://localhost:8811/users/login', {
-      userName: form.email,
-      password: form.password
-    })
-
-    console.log("Response thành công:", response)
-
-    // Nếu API chạy ngon, ta sẽ gọi authStore sau để set token
-    await authStore.login(form.email, form.password)
-
-    toast.success('Đăng nhập thành công!')
-    router.push('/dashboard')
-
-  } catch (error) {
-    // IN FULL LỖI RA CONSOLE VÀ MÀN HÌNH ĐỂ DEBUG
-    console.error('LỖI ĐĂNG NHẬP CHI TIẾT:', error.response || error)
-
-    if (error.response) {
-      const status = error.response.status
-      const data = error.response.data
-
-      if (status === 500) {
-        const serverMsg = data.message || JSON.stringify(data)
-        errorMessage.value = `[Status 500] Backend sập khi xử lý. Chi tiết trả về: ${serverMsg}`
-      } else if (status === 401) {
-        errorMessage.value = '[Status 401] Sai email hoặc mật khẩu.'
-      } else {
-        errorMessage.value = `[Status ${status}] Dữ liệu trả về: ${JSON.stringify(data)}`
-      }
-    } else if (error.request) {
-      errorMessage.value = 'Không kết nối được Backend. Server (8811) đã chạy chưa?'
+    if (result.success) {
+      toast.success('Đăng nhập thành công!')
+      router.push('/dashboard')
     } else {
-      errorMessage.value = error.message
+      errorMessage.value = result.message
+      toast.error('Đăng nhập thất bại!')
     }
 
+  } catch (error) {
+    console.error('LỖI ĐĂNG NHẬP CHI TIẾT:', error)
+    errorMessage.value = 'Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại.'
     toast.error('Đăng nhập thất bại!')
   } finally {
     loading.value = false

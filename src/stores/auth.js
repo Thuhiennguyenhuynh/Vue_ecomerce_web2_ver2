@@ -13,25 +13,16 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (email, password) => {
     try {
-      // 1. Sửa URL cho đúng API Gateway -> Zuul -> User Service
-      // 2 & 3. Dùng 'params' thay vì body, và map 'email' thành 'userName'
-      // const response = await axios.post(`${BASE_URL}/api/accounts/users/login`, null, {
-      //   params: {
-      //     userName: email,
-      //     password: password
-      //   }
-      // })
-
-   const response = await axios.post('http://localhost:8900/api/accounts/users/login', {
+      // Gọi trực tiếp đến user-service (port 8811) thay vì qua API Gateway
+      const response = await axios.post('http://localhost:8811/users/login', {
         userName: email,
         password: password
       })
 
-      // 4. Backend Spring Boot hiện tại chỉ trả về cục dữ liệu User (không có token)
-      // Nên response.data chính là userData
+      // Backend trả về userData
       const userData = response.data
 
-      // Vì backend chưa làm JWT Token, ta tạm tạo một fake token để frontend nhận diện là đã login
+      // Tạo fake token để đánh dấu đã authenticated
       const fakeToken = "authenticated-token-placeholder"
 
       token.value = fakeToken
@@ -39,9 +30,6 @@ export const useAuthStore = defineStore('auth', () => {
 
       localStorage.setItem('token', fakeToken)
       localStorage.setItem('user', JSON.stringify(userData))
-
-      // Nếu sau này backend có JWT thực sự, hãy mở khoá dòng này:
-      // axios.defaults.headers.common['Authorization'] = `Bearer ${fakeToken}`
 
       return { success: true }
     } catch (error) {
@@ -52,6 +40,8 @@ export const useAuthStore = defineStore('auth', () => {
         errorMsg = 'Sai tài khoản hoặc mật khẩu!';
       } else if (error.response && error.response.status === 404) {
         errorMsg = 'Không tìm thấy API (Sai URL đường dẫn).';
+      } else if (error.response && error.response.status === 500) {
+        errorMsg = 'Lỗi server nội bộ.';
       }
 
       return {

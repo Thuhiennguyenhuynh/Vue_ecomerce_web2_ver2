@@ -110,8 +110,8 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
 // Gọi qua Cổng API Gateway 8900
-const API_URL = 'http://localhost:8900/api/catalog/admin/products'
-const CATEGORY_API_URL = 'http://localhost:8900/api/catalog/admin/categories'
+const API_URL = 'http://localhost:8900/catalog/admin/products'
+const CATEGORY_API_URL = 'http://localhost:8900/catalog/admin/categories'
 
 const products = ref([])
 const categories = ref([])

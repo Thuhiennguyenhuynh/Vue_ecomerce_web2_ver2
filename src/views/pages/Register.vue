@@ -95,7 +95,7 @@ const handleRegister = async () => {
   isLoading.value = true
 
   try {
-   const response = await axios.post('http://localhost:8811/registration', {
+   const response = await axios.post('http://localhost:8900/api/accounts/registration', {
       userName: form.value.email,
       userPassword: form.value.password,
       role: {

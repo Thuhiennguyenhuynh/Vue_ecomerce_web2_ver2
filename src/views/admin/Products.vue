@@ -38,7 +38,7 @@
                   <CTableDataCell class="text-center">{{ product.id }}</CTableDataCell>
                   <CTableDataCell class="text-center">
                     <img
-                      :src="product.mainImageUrl || 'https://via.placeholder.com/50'"
+                      :src="product.imageUrl || 'http://via.placeholder.com/50'"
                       alt="Product Image"
                       class="img-thumbnail"
                       style="width: 50px; height: 50px; object-fit: cover;"
@@ -117,8 +117,8 @@
             <div class="col-md-6 mb-3">
               <CFormLabel>Ảnh Đại Diện (Upload)</CFormLabel>
               <CFormInput type="file" accept="image/*" @change="handleMainImageUpload" />
-              <div v-if="form.mainImageUrl" class="mt-2">
-                <img :src="form.mainImageUrl" alt="Preview" style="height: 100px; border-radius: 8px; object-fit: cover;" />
+              <div v-if="form.imageUrl" class="mt-2">
+                <img :src="form.imageUrl" alt="Preview" style="height: 100px; border-radius: 8px; object-fit: cover;" />
               </div>
             </div>
 
@@ -157,9 +157,9 @@
 import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 
-// Gọi qua Cổng API Gateway 8900
-const API_URL = 'http://localhost:8900/catalog/admin/products'
-const CATEGORY_API_URL = 'http://localhost:8900/catalog/admin/categories'
+// Gọi qua Cổng API Gateway 8900 - CORRIGIDO
+const API_URL = 'http://localhost:8900/api/catalog/admin/products'
+const CATEGORY_API_URL = 'http://localhost:8900/api/catalog/admin/categories'
 
 const products = ref([])
 const categories = ref([])
@@ -177,7 +177,7 @@ const form = ref({
   price: 0,
   categoryId: '',
   availability: 0,
-  mainImageUrl: '',
+imageUrl: '',
   additionalImageUrls: [], // Mảng chứa URL ảnh phụ sau khi upload
   discription: ''
 })
@@ -215,28 +215,80 @@ const generateSKU = () => {
 }
 
 // === CÁC HÀM XỬ LÝ UPLOAD ẢNH ===
-// Hàm giả lập việc gửi file lên Server và nhận về URL ảnh
-const uploadImageToServer = async (file) => {
-  /*
-   * ⚠️ LƯU Ý CHO BACKEND:
-   * Bạn cần tạo 1 API (ví dụ: POST /admin/upload) ở backend để nhận MultipartFile.
-   * Lưu file vào thư mục hoặc Cloudinary/S3, sau đó trả về 1 chuỗi URL của ảnh.
-   * Dưới đây là code gọi API thực tế nếu bạn đã làm API đó:
-   * * const formData = new FormData();
-   * formData.append('file', file);
-   * const response = await axios.post('http://localhost:8900/catalog/admin/upload', formData, {
-   * headers: { 'Content-Type': 'multipart/form-data' }
-   * });
-   * return response.data.imageUrl; // URL ảnh do BE trả về
-   */
+const sanitizeFileName = (value) => {
+  if (!value) return 'file'
+  return value.toString().toLowerCase()
+    .replace(/á|à|ả|ạ|ã|ă|ắ|ằ|ẳ|ẵ|ặ|â|ấ|ầ|ẩ|ẫ|ậ/gi, 'a')
+    .replace(/é|è|ẻ|ẽ|ẹ|ê|ế|ề|ể|ễ|ệ/gi, 'e')
+    .replace(/i|í|ì|ỉ|ĩ|ị/gi, 'i')
+    .replace(/ó|ò|ỏ|õ|ọ|ô|ố|ồ|ổ|ỗ|ộ|ơ|ớ|ờ|ở|ỡ|ợ/gi, 'o')
+    .replace(/ú|ù|ủ|ũ|ụ|ư|ứ|ừ|ử|ữ|ự/gi, 'u')
+    .replace(/ý|ỳ|ỷ|ỹ|ỵ/gi, 'y')
+    .replace(/đ/gi, 'd')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '')
+}
 
-  // Tạm thời giả lập bằng việc tạo 1 URL local tạm thời từ file ở Frontend (để bạn xem trước giao diện)
-  // KHI NÀO CÓ API BE THÌ XÓA DÒNG NÀY VÀ MỞ COMMENT Ở TRÊN
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(URL.createObjectURL(file));
-    }, 500); // Giả vờ mất 0.5s để upload
-  });
+const buildNamedFile = (file, fileName) => {
+  return new File([file], fileName, { type: file.type })
+}
+
+const buildFileName = (file, options = {}) => {
+  const extension = file.name.split('.').pop() || 'png'
+  const timestamp = Date.now()
+  const baseName = options.baseName ? sanitizeFileName(options.baseName) : sanitizeFileName(file.name.replace(/\.[^/.]+$/, ''))
+
+  if (options.type === 'user') {
+    return `${baseName}.${extension}`
+  }
+
+  if (options.type === 'extra') {
+    return `${baseName}-phu123-${timestamp}.${extension}`
+  }
+
+  if (options.type === 'main') {
+    return `${baseName}-main-${timestamp}.${extension}`
+  }
+
+  return `${baseName}-${timestamp}.${extension}`
+}
+
+// const uploadImageToServer = async (file, options = {}) => {
+//   const namedFile = buildNamedFile(file, buildFileName(file, options))
+//   const formData = new FormData()
+//   formData.append('file', namedFile, namedFile.name)
+
+//   const response = await axios.post('http://localhost:8900/api/catalog/admin/upload', formData, {
+//   })
+
+//   // Resposta contém fileName ou fileUrl
+//   const fileUrl = response.data.fileUrl || (`/images/${response.data.fileName}`)
+//   if (!fileUrl) {
+//     throw new Error('Không nhận được URL file từ server')
+//   }
+
+//   // Converter para URL đầy đủ qua API Gateway
+//   return `http://localhost:8900/api/catalog${fileUrl}`
+// }
+
+const uploadImageToServer = async (file, options = {}) => {
+  try {
+      const namedFile = buildNamedFile(file, buildFileName(file, options))
+      const formData = new FormData()
+      formData.append('file', namedFile, namedFile.name)
+
+      // Gửi request
+      const response = await axios.post('http://localhost:8900/api/catalog/admin/upload', formData)
+
+      const fileUrl = response.data.fileUrl || (`/images/${response.data.fileName}`)
+      return `http://localhost:8900/api/catalog${fileUrl}`
+  } catch (error) {
+      // DÒNG NÀY RẤT QUAN TRỌNG: In ra chi tiết thông báo lỗi từ Backend
+      console.error('CHI TIẾT LỖI UPLOAD:', error.response?.data);
+      alert('Lỗi upload: ' + JSON.stringify(error.response?.data || error.message));
+      throw error;
+  }
 }
 
 const handleMainImageUpload = async (event) => {
@@ -244,10 +296,13 @@ const handleMainImageUpload = async (event) => {
   if (!file) return;
   isUploading.value = true;
   try {
-    const uploadedUrl = await uploadImageToServer(file);
-    form.value.mainImageUrl = uploadedUrl;
+    const uploadedUrl = await uploadImageToServer(file, {
+      type: 'main',
+      baseName: form.value.productName || file.name.replace(/\.[^/.]+$/, '')
+    })
+    form.value.imageUrl = uploadedUrl;
   } catch (error) {
-    alert("Lỗi upload ảnh đại diện!");
+    alert('Lỗi upload ảnh đại diện!')
   } finally {
     isUploading.value = false;
   }
@@ -259,14 +314,17 @@ const handleAdditionalImagesUpload = async (event) => {
 
   isUploading.value = true;
   try {
-    // Upload nhiều file cùng lúc
-    const uploadPromises = files.map(file => uploadImageToServer(file));
+    // Upload nhiều file cùng lúc và đặt tên ảnh phụ theo tên sản phẩm + phu123
+    const uploadPromises = files.map((file) => uploadImageToServer(file, {
+      type: 'extra',
+      baseName: form.value.productName || file.name.replace(/\.[^/.]+$/, '')
+    }))
     const uploadedUrls = await Promise.all(uploadPromises);
 
     // Nối thêm vào mảng ảnh phụ hiện có
     form.value.additionalImageUrls = [...form.value.additionalImageUrls, ...uploadedUrls];
   } catch (error) {
-    alert("Lỗi upload ảnh phụ!");
+    alert('Lỗi upload ảnh phụ!')
   } finally {
     isUploading.value = false;
   }
@@ -307,12 +365,11 @@ const resetForm = () => {
     price: 0,
     categoryId: '',
     availability: 0,
-    mainImageUrl: '',
+    imageUrl: '',
     additionalImageUrls: [],
     discription: ''
   }
 }
-
 const openAddModal = () => {
   resetForm()
   isEdit.value = false
@@ -328,7 +385,7 @@ const openEditModal = (product) => {
     price: product.price,
     categoryId: product.category?.id || '',
     availability: product.availability,
-    mainImageUrl: product.mainImageUrl || '',
+    imageUrl: product.imageUrl || '',
     additionalImageUrls: product.images ? product.images.map(img => img.imageUrl) : [],
     discription: product.discription
   }
@@ -354,7 +411,7 @@ const saveProduct = async () => {
     price: form.value.price,
     discription: form.value.discription,
     availability: form.value.availability,
-    mainImageUrl: form.value.mainImageUrl,
+    imageUrl: form.value.imageUrl,
     category: { id: form.value.categoryId },
     images: formattedImages
   }
@@ -367,9 +424,11 @@ const saveProduct = async () => {
     }
     showModal.value = false
     fetchProducts()
+    alert(isEdit.value ? 'Cập nhật sản phẩm thành công!' : 'Thêm sản phẩm thành công!')
   } catch (error) {
     console.error('Lỗi khi lưu:', error)
-    alert('Lưu thất bại! Hãy kiểm tra mã SKU/Slug xem có bị trùng hay không.')
+    const message = error.response?.data?.message || 'Lưu thất bại! Hãy kiểm tra lại thông tin.'
+    alert(message)
   } finally {
     isSaving.value = false
   }

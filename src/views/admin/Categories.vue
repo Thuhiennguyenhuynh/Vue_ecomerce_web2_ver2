@@ -80,7 +80,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
 // Cổng API Gateway 8900
-const API_URL = 'http://localhost:8900/catalog/admin/categories'
+const API_URL = 'http://localhost:8900/api/catalog/admin/categories'
 
 const categories = ref([])
 const showModal = ref(false)
@@ -152,8 +152,10 @@ const saveCategory = async () => {
   try {
     if (isEdit.value) {
       await axios.put(`${API_URL}/${form.value.id}`, payload)
+      alert('Cập nhật danh mục thành công!')
     } else {
       await axios.post(API_URL, payload)
+      alert('Thêm danh mục thành công!')
     }
     showModal.value = false
     fetchCategories()
@@ -172,10 +174,31 @@ const saveCategory = async () => {
   }
 }
 
+// const deleteCategory = async (id) => {
+//   if (confirm('Bạn có chắc chắn muốn xóa? LƯU Ý: Nếu danh mục đang chứa Sản phẩm, việc xóa sẽ gây lỗi hệ thống!')) {
+//     try {
+//       await axios.delete(`${API_URL}/${id}`)
+//       fetchCategories()
+//     } catch (error) {
+//       console.error('Lỗi khi xóa:', {
+//         status: error.response?.status,
+//         data: error.response?.data,
+//         headers: error.response?.headers,
+//         request: error.request,
+//         message: error.message,
+//         config: error.config,
+//       })
+//       alert('Không thể xóa! Danh mục này có thể đang được gán cho sản phẩm hoặc server trả lỗi 500.')
+//     }
+//   }
+// }
+
+// Ví dụ xử lý khi xóa
 const deleteCategory = async (id) => {
   if (confirm('Bạn có chắc chắn muốn xóa? LƯU Ý: Nếu danh mục đang chứa Sản phẩm, việc xóa sẽ gây lỗi hệ thống!')) {
     try {
       await axios.delete(`${API_URL}/${id}`)
+      alert('Xóa danh mục thành công!')
       fetchCategories()
     } catch (error) {
       console.error('Lỗi khi xóa:', {
@@ -190,6 +213,7 @@ const deleteCategory = async (id) => {
     }
   }
 }
+
 
 onMounted(() => {
   fetchCategories()

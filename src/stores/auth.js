@@ -7,7 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
 // Lấy user từ localStorage ngay khi khởi tạo để tránh lỗi F5 mất dữ liệu
   const user = ref(JSON.parse(localStorage.getItem('user')) || null)
   // Thêm biến kiểm tra Admin
-  const isAdmin = computed(() => user.value && user.value.role && user.value.role.roleName === 'ADMIN')
+  const isAdmin = computed(() => user.value && user.value.role && user.value.role.roleName === 'ROLE_ADMIN')
   const token = ref(localStorage.getItem('token') || null)
   const isAuthenticated = computed(() => !!token.value)
 
@@ -15,9 +15,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (email, password) => {
     try {
-      // Gọi trực tiếp đến user-service (port 8811) thay vì qua API Gateway
-      const response = await axios.post('http://localhost:8811/users/login', {
-        userName: email,
+      // Gọi qua API Gateway để dùng chung route và CORS
+      const response = await axios.post(`${BASE_URL}/users/admin/login`, {
+        email: email,
         password: password
       })
 

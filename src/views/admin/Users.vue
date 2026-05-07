@@ -101,8 +101,8 @@ const users = ref([])
 const showModal = ref(false)
 const isEdit = ref(false)
 
-// Cổng của Service Người Dùng
-const BASE_URL = 'http://localhost:8810'
+// Cổng của Service Người Dùng qua API Gateway
+const BASE_URL = 'http://localhost:8900/api/accounts'
 
 const form = ref({
   id: null,
@@ -116,7 +116,7 @@ const form = ref({
 // Lấy danh sách người dùng từ backend
 const fetchUsers = async () => {
   try {
-    const response = await axios.get(`${BASE_URL}/admin/users`)
+    const response = await axios.get(`${BASE_URL}/users`)
     users.value = response.data
   } catch (error) {
     if (error.response && error.response.status === 404) {
@@ -169,10 +169,10 @@ const saveUser = async () => {
 
   try {
     if (isEdit.value) {
-      await axios.put(`${BASE_URL}/admin/users/${form.value.id}`, payload)
+      await axios.put(`${BASE_URL}/users/${form.value.id}`, payload)
       alert('Cập nhật người dùng thành công!')
     } else {
-      await axios.post(`${BASE_URL}/admin/users`, payload)
+      await axios.post(`${BASE_URL}/users`, payload)
       alert('Thêm mới người dùng thành công!')
     }
     showModal.value = false
@@ -188,7 +188,7 @@ const deleteUser = async (id) => {
   if (!confirm('Bạn có chắc chắn muốn xóa người dùng này?')) return
 
   try {
-    await axios.delete(`${BASE_URL}/admin/users/${id}`)
+    await axios.delete(`${BASE_URL}/users/${id}`)
     alert('Xóa người dùng thành công!')
     fetchUsers()
   } catch (error) {

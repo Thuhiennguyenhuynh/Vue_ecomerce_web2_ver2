@@ -156,8 +156,10 @@ const showDetailsModal = ref(false)
 const isEdit = ref(false)
 const selectedOrder = ref(null)
 
-// URL của Backend
-const BASE_URL = 'http://localhost:8810'
+// URL của Backend qua API Gateway
+const ORDER_API_URL = 'http://localhost:8900/api/shop'
+const USER_API_URL = 'http://localhost:8900/api/accounts'
+const PRODUCT_API_URL = 'http://localhost:8900/api/catalog'
 
 const form = ref({
   id: null,
@@ -177,7 +179,7 @@ const totalPrice = computed(() => {
 // Lấy danh sách đơn hàng
 const fetchOrders = async () => {
   try {
-    const response = await axios.get(`${BASE_URL}/admin/orders`)
+    const response = await axios.get(`${ORDER_API_URL}/admin/orders`)
     orders.value = response.data
   } catch (error) {
     if (error.response && error.response.status === 404) {
@@ -191,7 +193,7 @@ const fetchOrders = async () => {
 // Lấy danh sách người dùng
 const fetchUsers = async () => {
   try {
-    const response = await axios.get(`${BASE_URL}/admin/users`)
+    const response = await axios.get(`${USER_API_URL}/users`)
     users.value = response.data
   } catch (error) {
     console.error('Lỗi khi tải người dùng:', error)
@@ -201,7 +203,7 @@ const fetchUsers = async () => {
 // Lấy danh sách sản phẩm
 const fetchProducts = async () => {
   try {
-    const response = await axios.get(`${BASE_URL}/admin/products`)
+    const response = await axios.get(`${PRODUCT_API_URL}/products`)
     products.value = response.data
   } catch (error) {
     console.error('Lỗi khi tải sản phẩm:', error)
@@ -264,10 +266,10 @@ const saveOrder = async () => {
 
   try {
     if (isEdit.value) {
-      await axios.put(`${BASE_URL}/admin/orders/${form.value.id}`, payload)
+      await axios.put(`${ORDER_API_URL}/admin/orders/${form.value.id}`, payload)
       alert('Cập nhật đơn hàng thành công!')
     } else {
-      await axios.post(`${BASE_URL}/admin/orders`, payload)
+      await axios.post(`${ORDER_API_URL}/admin/orders`, payload)
       alert('Thêm mới đơn hàng thành công!')
     }
     showModal.value = false
@@ -283,7 +285,7 @@ const deleteOrder = async (id) => {
   if (!confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) return
 
   try {
-    await axios.delete(`${BASE_URL}/admin/orders/${id}`)
+    await axios.delete(`${ORDER_API_URL}/admin/orders/${id}`)
     alert('Xóa đơn hàng thành công!')
     fetchOrders()
   } catch (error) {

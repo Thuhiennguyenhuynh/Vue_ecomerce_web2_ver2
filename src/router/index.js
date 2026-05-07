@@ -22,6 +22,36 @@ const routes = [
   },
   {
     path: '/',
+    name: 'ClientHome',
+    component: () => import('@/views/client/HomeView.vue'),
+  },
+  {
+    path: '/menu',
+    name: 'Shop',
+    component: () => import('@/views/client/ShopView.vue'),
+  },
+  {
+    path: '/cart',
+    name: 'Cart',
+    component: () => import('@/views/client/CheckoutFlow.vue'),
+  },
+  {
+    path: '/checkout',
+    name: 'Checkout',
+    component: () => import('@/views/client/CheckoutFlow.vue'),
+  },
+  {
+    path: '/client-login',
+    name: 'ClientLogin',
+    component: () => import('@/views/client/ClientFeatures.vue'),
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/client/ProfileView.vue'),
+  },
+  {
+    path: '/',
     name: 'Home',
     component: DefaultLayout,
     redirect: '/dashboard',

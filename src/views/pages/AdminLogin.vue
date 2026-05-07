@@ -6,11 +6,11 @@
           <CCard class="p-4">
             <CCardBody>
               <CForm @submit.prevent="handleLogin">
-               <h1>Đăng Nhập Admin</h1>
-<p class="text-body-secondary">Đăng nhập để quản lý hệ thống</p>
+                <h1>Đăng Nhập Admin</h1>
+                <p class="text-body-secondary">Đăng nhập để quản lý hệ thống</p>
 
                 <CAlert v-if="errorMessage" color="danger" class="mb-4">
-                  <strong>LỖI CHI TIẾT:</strong> <br/>
+                  <strong>LỖI CHI TIẾT:</strong> <br />
                   {{ errorMessage }}
                 </CAlert>
 
@@ -18,14 +18,8 @@
                   <CInputGroupText>
                     <CIcon icon="cil-user" />
                   </CInputGroupText>
-                  <CFormInput
-                    v-model="form.email"
-                    type="email"
-                    placeholder="Email"
-                    autocomplete="email"
-                    :invalid="v$.email.$error"
-                    required
-                  />
+                  <CFormInput v-model="form.email" type="email" placeholder="Email" autocomplete="email"
+                    :invalid="v$.email.$error" required />
                   <CFormFeedback invalid v-if="v$.email.$error">
                     {{ v$.email.$errors[0].$message }}
                   </CFormFeedback>
@@ -35,14 +29,8 @@
                   <CInputGroupText>
                     <CIcon icon="cil-lock-locked" />
                   </CInputGroupText>
-                  <CFormInput
-                    v-model="form.password"
-                    type="password"
-                    placeholder="Mật khẩu"
-                    autocomplete="current-password"
-                    :invalid="v$.password.$error"
-                    required
-                  />
+                  <CFormInput v-model="form.password" type="password" placeholder="Mật khẩu"
+                    autocomplete="current-password" :invalid="v$.password.$error" required />
                   <CFormFeedback invalid v-if="v$.password.$error">
                     {{ v$.password.$errors[0].$message }}
                   </CFormFeedback>
@@ -126,12 +114,14 @@ const handleLogin = async () => {
 
     if (result.success) {
       // KIỂM TRA ROLE ADMIN
-      if (authStore.user && authStore.user.role && authStore.user.role.roleName === 'ADMIN') {
-         toast.success('Đăng nhập Admin thành công!')
-         router.push('/dashboard')
+      if (authStore.user && authStore.user.role && authStore.user.role.roleName === 'ROLE_ADMIN') {
+        toast.success('Đăng nhập Admin thành công!')
+        router.push('/dashboard')
       } else {
-         authStore.logout() // Bắt user ra nếu không phải Admin
-         errorMessage.value = 'Bạn không có quyền truy cập trang quản trị!'
+        // BẠN CÓ ĐANG VÀO ĐÂY KHÔNG?
+        alert(result.message)
+        authStore.logout() // Bắt user ra nếu không phải Admin
+        errorMessage.value = 'Bạn không có quyền truy cập trang quản trị!'
       }
     } else {
       errorMessage.value = result.message

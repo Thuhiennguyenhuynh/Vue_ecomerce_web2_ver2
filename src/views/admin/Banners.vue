@@ -71,10 +71,15 @@
             <CFormLabel>Tên Banner <span class="text-danger">*</span></CFormLabel>
             <CFormInput v-model="form.name" placeholder="Nhập tên banner" required />
           </div>
+          
           <div class="mb-3">
-            <CFormLabel>URL Hình Ảnh <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.imageUrl" placeholder="Nhập URL hình ảnh" required />
+            <CFormLabel>Hình Ảnh <span class="text-danger" v-if="!isEdit">*</span></CFormLabel>
+            <CFormInput type="file" accept="image/*" @change="handleFileUpload" />
+            <div v-if="isEdit && form.imageUrl" class="mt-2">
+              <img :src="form.imageUrl" alt="Current Image" style="max-height: 100px; border-radius: 4px;" />
+            </div>
           </div>
+
           <div class="mb-3">
             <CFormLabel>Link URL (Tùy chọn)</CFormLabel>
             <CFormInput v-model="form.linkUrl" placeholder="Nhập URL khi click vào banner" />
@@ -104,13 +109,17 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
-const API_URL = 'http://localhost:8900/api/admin/banners'
+// Lưu ý: Cập nhật URL API khớp với Backend Controller
+const API_URL = '/admin/banners' 
 
 const banners = ref([])
 const showModal = ref(false)
 const isEdit = ref(false)
 const isLoading = ref(false)
 const isSaving = ref(false)
+
+// Khai báo biến lưu file hình ảnh
+const selectedFile = ref(null)
 
 const form = ref({
   id: null,
@@ -133,8 +142,14 @@ const fetchBanners = async () => {
   }
 }
 
+// Hàm lấy file người dùng upload
+const handleFileUpload = (event) => {
+  selectedFile.value = event.target.files[0]
+}
+
 const resetForm = () => {
   form.value = { id: null, name: '', imageUrl: '', linkUrl: '', active: true, position: 0 }
+  selectedFile.value = null // reset lại file
 }
 
 const openAddModal = () => {
@@ -145,30 +160,54 @@ const openAddModal = () => {
 
 const openEditModal = (banner) => {
   form.value = { ...banner }
+  selectedFile.value = null // reset lại file khi mở modal
   isEdit.value = true
   showModal.value = true
 }
 
 const saveBanner = async () => {
-  if (!form.value.name || !form.value.imageUrl) {
-    alert('Vui lòng nhập đầy đủ tên và URL hình ảnh!')
+  if (!form.value.name) {
+    alert('Vui lòng nhập tên banner!')
+    return
+  }
+  if (!isEdit.value && !selectedFile.value) {
+    alert('Vui lòng chọn hình ảnh khi thêm mới banner!')
     return
   }
 
   isSaving.value = true
   try {
+    // 1. Tạo form data
+    const formData = new FormData();
+    
+    // 2. Chèn object dữ liệu vào FormData dưới dạng Blob (JSON)
+    const bannerData = { ...form.value };
+    formData.append("data", new Blob([JSON.stringify(bannerData)], { type: "application/json" }));
+    
+    // 3. Đính kèm file ảnh (nếu có chọn)
+    if (selectedFile.value) {
+      formData.append("image", selectedFile.value);
+    }
+
+    const axiosConfig = {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    };
+
     if (isEdit.value) {
-      await axios.put(`${API_URL}/${form.value.id}`, form.value)
+      await axios.put(`${API_URL}/${form.value.id}`, formData, axiosConfig)
       alert('Cập nhật banner thành công!')
     } else {
-      await axios.post(API_URL, form.value)
+      await axios.post(API_URL, formData, axiosConfig)
       alert('Thêm banner thành công!')
     }
+    
     showModal.value = false
     fetchBanners()
   } catch (error) {
     console.error('Lỗi khi lưu banner:', error)
-    alert('Lưu thất bại!')
+    alert('Lưu thất bại! ' + (error.response?.data?.message || ''))
   } finally {
     isSaving.value = false
   }

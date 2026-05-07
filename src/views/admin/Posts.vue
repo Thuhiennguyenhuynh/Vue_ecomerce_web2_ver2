@@ -64,10 +64,15 @@
             <CFormLabel>Tiêu Đề <span class="text-danger">*</span></CFormLabel>
             <CFormInput v-model="form.title" placeholder="Nhập tiêu đề bài viết" required />
           </div>
+
           <div class="mb-3">
-            <CFormLabel>URL Hình Ảnh</CFormLabel>
-            <CFormInput v-model="form.imageUrl" placeholder="Nhập URL hình ảnh" />
+            <CFormLabel>Hình Ảnh</CFormLabel>
+            <CFormInput type="file" accept="image/*" @change="handleFileUpload" />
+            <div v-if="isEdit && form.imageUrl" class="mt-2">
+              <img :src="form.imageUrl" alt="Current Image" style="max-height: 100px; border-radius: 4px;" />
+            </div>
           </div>
+
           <div class="mb-3">
             <CFormLabel>Nội Dung <span class="text-danger">*</span></CFormLabel>
             <CFormTextarea v-model="form.content" rows="10" placeholder="Nhập nội dung bài viết..." required></CFormTextarea>
@@ -88,13 +93,17 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
-const API_URL = 'http://localhost:8900/api/admin/posts'
+// Cập nhật lại đường dẫn cho khớp với file Controller Backend
+const API_URL = 'http://localhost:8900/api/catalog/admin/posts'
 
 const posts = ref([])
 const showModal = ref(false)
 const isEdit = ref(false)
 const isLoading = ref(false)
 const isSaving = ref(false)
+
+// Khai báo biến lưu file ảnh Post
+const selectedFile = ref(null)
 
 const form = ref({
   id: null,
@@ -115,8 +124,14 @@ const fetchPosts = async () => {
   }
 }
 
+// Hàm lấy dữ liệu ảnh được chọn
+const handleFileUpload = (event) => {
+  selectedFile.value = event.target.files[0]
+}
+
 const resetForm = () => {
   form.value = { id: null, title: '', content: '', imageUrl: '' }
+  selectedFile.value = null
 }
 
 const openAddModal = () => {
@@ -127,6 +142,7 @@ const openAddModal = () => {
 
 const openEditModal = (post) => {
   form.value = { ...post }
+  selectedFile.value = null
   isEdit.value = true
   showModal.value = true
 }
@@ -139,18 +155,36 @@ const savePost = async () => {
 
   isSaving.value = true
   try {
+    const formData = new FormData();
+    const postData = { ...form.value };
+
+    // Đóng gói data sang JSON Blob
+    formData.append("data", new Blob([JSON.stringify(postData)], { type: "application/json" }));
+
+    // Đính kèm ảnh
+    if (selectedFile.value) {
+      formData.append("image", selectedFile.value);
+    }
+
+    const axiosConfig = {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    };
+
     if (isEdit.value) {
-      await axios.put(`${API_URL}/${form.value.id}`, form.value)
+      await axios.put(`${API_URL}/${form.value.id}`, formData, axiosConfig)
       alert('Cập nhật bài viết thành công!')
     } else {
-      await axios.post(API_URL, form.value)
+      await axios.post(API_URL, formData, axiosConfig)
       alert('Thêm bài viết thành công!')
     }
+
     showModal.value = false
     fetchPosts()
   } catch (error) {
     console.error('Lỗi khi lưu bài viết:', error)
-    alert('Lưu thất bại!')
+    alert('Lưu thất bại! ' + (error.response?.data?.message || ''))
   } finally {
     isSaving.value = false
   }

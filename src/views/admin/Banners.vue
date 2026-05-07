@@ -109,16 +109,17 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
-// Lưu ý: Cập nhật URL API khớp với Backend Controller
-const API_URL = '/admin/banners' 
+// API Cổng 8900
+const API_URL = 'http://localhost:8900/api/catalog/admin/banners' 
+const UPLOAD_API = 'http://localhost:8900/api/catalog/admin/upload'
 
 const banners = ref([])
-const showModal = ref(false)
+const showModal = ref(false)  
 const isEdit = ref(false)
 const isLoading = ref(false)
 const isSaving = ref(false)
+const isUploading = ref(false)
 
-// Khai báo biến lưu file hình ảnh
 const selectedFile = ref(null)
 
 const form = ref({
@@ -142,14 +143,13 @@ const fetchBanners = async () => {
   }
 }
 
-// Hàm lấy file người dùng upload
 const handleFileUpload = (event) => {
   selectedFile.value = event.target.files[0]
 }
 
 const resetForm = () => {
   form.value = { id: null, name: '', imageUrl: '', linkUrl: '', active: true, position: 0 }
-  selectedFile.value = null // reset lại file
+  selectedFile.value = null 
 }
 
 const openAddModal = () => {
@@ -160,9 +160,25 @@ const openAddModal = () => {
 
 const openEditModal = (banner) => {
   form.value = { ...banner }
-  selectedFile.value = null // reset lại file khi mở modal
+  selectedFile.value = null 
   isEdit.value = true
   showModal.value = true
+}
+
+// Hàm format và upload ảnh dùng chung (Giống bên Products.vue)
+const formatImageUrl = (fileUrl) => {
+  if (!fileUrl) return '';
+  if (fileUrl.startsWith('http')) {
+    return fileUrl.replace('http://', 'https://');
+  }
+  return `http://localhost:8900/api/catalog${fileUrl}`;
+}
+
+const uploadImageToServer = async (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await axios.post(UPLOAD_API, formData)
+  return formatImageUrl(res.data.fileUrl || `/images/${res.data.fileName}`)
 }
 
 const saveBanner = async () => {
@@ -170,36 +186,34 @@ const saveBanner = async () => {
     alert('Vui lòng nhập tên banner!')
     return
   }
-  if (!isEdit.value && !selectedFile.value) {
+  if (!isEdit.value && !selectedFile.value && !form.value.imageUrl) {
     alert('Vui lòng chọn hình ảnh khi thêm mới banner!')
     return
   }
 
   isSaving.value = true
   try {
-    // 1. Tạo form data
-    const formData = new FormData();
-    
-    // 2. Chèn object dữ liệu vào FormData dưới dạng Blob (JSON)
-    const bannerData = { ...form.value };
-    formData.append("data", new Blob([JSON.stringify(bannerData)], { type: "application/json" }));
-    
-    // 3. Đính kèm file ảnh (nếu có chọn)
+    // 1. Nếu có chọn file mới, upload file lên server trước
     if (selectedFile.value) {
-      formData.append("image", selectedFile.value);
+      isUploading.value = true
+      form.value.imageUrl = await uploadImageToServer(selectedFile.value)
+      isUploading.value = false
     }
 
-    const axiosConfig = {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    };
+    // 2. Gửi dữ liệu dưới dạng JSON thuần túy (Không dùng FormData)
+    const payload = {
+      name: form.value.name,
+      imageUrl: form.value.imageUrl,
+      linkUrl: form.value.linkUrl,
+      active: form.value.active,
+      position: form.value.position
+    }
 
     if (isEdit.value) {
-      await axios.put(`${API_URL}/${form.value.id}`, formData, axiosConfig)
+      await axios.put(`${API_URL}/${form.value.id}`, payload)
       alert('Cập nhật banner thành công!')
     } else {
-      await axios.post(API_URL, formData, axiosConfig)
+      await axios.post(API_URL, payload)
       alert('Thêm banner thành công!')
     }
     
@@ -210,6 +224,7 @@ const saveBanner = async () => {
     alert('Lưu thất bại! ' + (error.response?.data?.message || ''))
   } finally {
     isSaving.value = false
+    isUploading.value = false
   }
 }
 

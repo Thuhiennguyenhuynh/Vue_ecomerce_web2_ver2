@@ -80,7 +80,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
 // Cổng API Gateway 8900
-const API_URL = '/admin/categories'
+const API_URL = 'http://localhost:8900/api/catalog/admin/categories'
 
 const categories = ref([])
 const showModal = ref(false)

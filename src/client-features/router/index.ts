@@ -6,7 +6,12 @@ const routes = [
   { path: '/products', name: 'Products', component: () => import('../views/Products.vue') },
   { path: '/articles', name: 'Articles', component: () => import('../views/Articles.vue') },
   { path: '/profile', name: 'Profile', component: () => import('../views/Profile.vue') },
-  { path: '/cart', name: 'Cart', component: () => import('../views/Cart.vue') }
+  { path: '/cart', name: 'Cart', component: () => import('../views/Cart.vue') },
+  {
+  path: '/products/:id',
+  name: 'ProductDetail',
+  component: () => import('../views/ProductDetail.vue')
+}
 ]
 
 const router = createRouter({

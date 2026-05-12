@@ -96,10 +96,10 @@
                   </div>
                   <div class="col-md-6">
                     <CFormLabel class="fw-semibold">Danh Mục <span class="text-danger">*</span></CFormLabel>
-                    <CFormSelect v-model="form.categoryId" required>
+                    <select class="form-select" v-model="form.categoryId" required>
                       <option value="" disabled>-- Chọn danh mục --</option>
                       <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.categoryName }}</option>
-                    </CFormSelect>
+                    </select>
                   </div>
                   <div class="col-md-6">
                     <CFormLabel class="fw-semibold">URL Slug <small class="text-muted">(Tự động tạo)</small></CFormLabel>
@@ -313,18 +313,31 @@ const openEditModal = (p) => {
 }
 
 const saveProduct = async () => {
-  if (!form.value.productName || !form.value.categoryId) return alert('Thiếu thông tin bắt buộc!')
+  if (!form.value.productName) return alert('Vui lòng nhập tên sản phẩm!')
+  if (!form.value.categoryId) return alert('Vui lòng chọn danh mục cho sản phẩm!')
+  if (form.value.price <= 0) return alert('Giá bán phải lớn hơn 0!')
+  if (!form.value.imageUrl) return alert('Vui lòng tải lên ảnh đại diện cho sản phẩm!')
+
   isSaving.value = true
   const payload = {
     ...form.value,
     category: { id: form.value.categoryId },
     images: form.value.additionalImageUrls.map(url => ({ imageUrl: url }))
   }
+  
+  // Set default description if empty to avoid backend validation error
+  if (!payload.discription) {
+    payload.discription = 'Chưa có mô tả'
+  }
+  
   try {
     if (isEdit.value) await axios.put(`${API_URL}/${form.value.id}`, payload)
     else await axios.post(API_URL, payload)
     showModal.value = false
     fetchProducts()
+  } catch (error) {
+    console.error(error)
+    alert('Có lỗi xảy ra khi lưu sản phẩm! Vui lòng kiểm tra lại giá bán (phải > 0) hoặc các trường khác.')
   } finally { isSaving.value = false }
 }
 

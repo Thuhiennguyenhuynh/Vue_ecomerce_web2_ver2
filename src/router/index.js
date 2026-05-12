@@ -2,6 +2,7 @@ import { h, resolveComponent } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import DefaultLayout from '@/layouts/DefaultLayout'
+import ClientLayout from '@/client-features/layouts/ClientLayout.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const routes = [
@@ -22,33 +23,49 @@ const routes = [
   },
   {
     path: '/',
-    name: 'ClientHome',
-    component: () => import('@/client-features/views/Home.vue'),
-  },
-  {
-    path: '/menu',
-    name: 'Shop',
-    component: () => import('@/client-features/views/Products.vue'), // Renamed from ShopView.vue
-  },
-  {
-    path: '/cart',
-    name: 'Cart',
-    component: () => import('@/client-features/views/Cart.vue'),
-  },
-  {
-    path: '/checkout',
-    name: 'Checkout',
-    component: () => import('@/client-features/views/CheckoutFlow.vue'),
-  },
-  {
-    path: '/client-login',
-    name: 'ClientLogin',
-    component: () => import('@/client-features/views/ClientFeatures.vue'),
-  },
-  {
-    path: '/profile',
-    name: 'Profile',
-    component: () => import('@/client-features/views/Profile.vue'),
+    component: ClientLayout,
+    children: [
+      {
+        path: '',
+        name: 'ClientHome',
+        component: () => import('@/client-features/views/Home.vue'),
+      },
+      {
+        path: 'products',
+        name: 'Shop',
+        component: () => import('@/client-features/views/Products.vue'),
+      },
+      {
+        path: 'products/:id',
+        name: 'ProductDetail',
+        component: () => import('@/client-features/views/ProductDetail.vue'),
+      },
+      {
+        path: 'articles',
+        name: 'Articles',
+        component: () => import('@/client-features/views/Articles.vue'),
+      },
+      {
+        path: 'articles/:id',
+        name: 'ArticleDetail',
+        component: () => import('@/client-features/views/ArticleDetail.vue'),
+      },
+      {
+        path: 'cart',
+        name: 'Cart',
+        component: () => import('@/client-features/views/Cart.vue'),
+      },
+      {
+        path: 'checkout',
+        name: 'Checkout',
+        component: () => import('@/client-features/views/CheckoutFlow.vue'),
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/client-features/views/Profile.vue'),
+      }
+    ]
   },
   {
     path: '/',
@@ -74,7 +91,7 @@ const routes = [
       {
         path:'admin/categories',
         name:'AdminCategories',
-        component: () => import('@/client-features/views/ClientFeatures.vue'),
+component:()=> import('@/views/admin/Categories.vue'),
         meta: { requiresAuth: true }
       },
       {

@@ -48,8 +48,8 @@ const products = ref([])
 onMounted(async () => {
   try {
     const [articlesRes, productsRes] = await Promise.all([
-      api.getArticles({ sort: 'latest', limit: 3 }),
-      api.getProducts({ sort: 'latest', limit: 4 })
+      api.getLatestPosts(),
+      api.getLatestProducts()
     ])
     articles.value = articlesRes.data
     products.value = productsRes.data

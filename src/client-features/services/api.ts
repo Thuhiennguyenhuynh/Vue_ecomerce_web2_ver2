@@ -1,30 +1,33 @@
 import axios from 'axios'
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api', // Pointing to the API Gateway
+  baseURL: 'http://localhost:8900/api',
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
 export default {
-  // Products
-  getProducts(params: any) {
+  getProducts(params?: any) {
     return apiClient.get('/products', { params })
   },
-  
-  // Articles
-  getArticles(params: any) {
-    return apiClient.get('/articles', { params })
+  getCategories() {
+    return apiClient.get('/products/categories')
   },
-  
-  // User
-  getUserProfile(id: string) {
-    return apiClient.get(`/users/${id}`)
+  getBanners() {
+    return apiClient.get('/public/banners')
   },
-  
-  // Payments/Assistant
-  askAssistant(query: string) {
-    return apiClient.post('/assistant', { query })
+  getArticles(params?: any) {
+    // THÊM DẤU / Ở CUỐI ĐỂ KHỚP VỚI REWRITEPATH CỦA GATEWAY
+    return apiClient.get('/articles/', { params }) 
+  },
+  getLatestProducts() {
+    return apiClient.get('/products/latest')
+  },
+  getLatestPosts() {
+    return apiClient.get('/public/posts/latest')
+  },
+  getUserOrders(userId: number | string) {
+    return apiClient.get(`/shop/order/user/${userId}`)
   }
 }

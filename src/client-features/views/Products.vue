@@ -122,11 +122,15 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../services/api'
 import { debounce } from 'lodash'
-import { useCartStore } from '../../stores/cart'
+
+// 1. SỬA LỖI GIỎ HÀNG: Dùng useCart composable thay vì Pinia store để đồng nhất key 'hincoffee_cart'
+import { useCart } from '../composables/useCart'
 
 const route = useRoute()
 const router = useRouter()
-const cartStore = useCartStore()
+
+// Lấy hàm addToCart từ useCart (đổi tên biến để tránh trùng lặp)
+const { addToCart: addProductToCart } = useCart()
 
 const products = ref<any[]>([])
 const categories = ref<any[]>([])
@@ -145,21 +149,33 @@ const fetchProducts = async () => {
     if (sortOption.value === 'price_asc') { sortBy = 'price'; sortDir = 'asc' }
     else if (sortOption.value === 'price_desc') { sortBy = 'price'; sortDir = 'desc' }
 
-    const res = await api.getProducts({
-      name: searchQuery.value || undefined,
-      categoryId: selectedCategoryId.value || undefined,
-      sortBy: sortBy || undefined,
-      sortDir: sortDir || undefined,
+    // 2. SỬA LỖI SORT & DANH MỤC: Build object params sạch sẽ
+    const params: any = {
       page: currentPage.value,
       size: pageSize
-    })
+    }
+
+    // Chỉ đính kèm param nếu có giá trị, tránh truyền 'undefined'
+    if (searchQuery.value) params.name = searchQuery.value;
+    if (selectedCategoryId.value !== null) params.categoryId = selectedCategoryId.value;
+    if (sortBy) params.sortBy = sortBy;
+    if (sortDir) params.sortDir = sortDir;
+
+    const res = await api.getProducts(params)
     products.value = res.data.content || []
     totalPages.value = res.data.totalPages || 0
   } catch (err) { console.error(err) }
 }
 
 const handleSearch = debounce(() => { currentPage.value = 0; fetchProducts() }, 500)
-const filterByCategory = (id: number | null) => { selectedCategoryId.value = id; currentPage.value = 0; fetchProducts() }
+
+// Khi click danh mục -> Đổi category ID -> Reset trang 0 -> Gọi API mới (sẽ lấy theo cả sort hiện tại)
+const filterByCategory = (id: number | null) => {
+  selectedCategoryId.value = id;
+  currentPage.value = 0;
+  fetchProducts()
+}
+
 const handleSort = () => { currentPage.value = 0; fetchProducts() }
 const changePage = (page: number) => { currentPage.value = page; fetchProducts(); window.scrollTo({ top: 300, behavior: 'smooth' }) }
 
@@ -170,7 +186,18 @@ const fetchCategories = async () => {
   } catch (err) { console.error(err) }
 }
 
-const addToCart = (product: any) => { cartStore.addToCart(product); alert('Đã thêm ' + product.productName + ' vào giỏ hàng!') }
+// 3. Cập nhật hàm Add to Cart
+const addToCart = (product: any) => {
+  // Hàm useCart.ts của bạn yêu cầu thuộc tính 'availability' để tính toán số lượng.
+  // Nếu API chưa trả về field này, ta cấp mặc định là 99 để tránh lỗi NaN
+  const cartProduct = {
+    ...product,
+    availability: product.availability || 99
+  }
+  addProductToCart(cartProduct);
+  alert('Đã thêm ' + product.productName + ' vào giỏ hàng!')
+}
+
 const goToProduct = (id: number) => { router.push(`/products/${id}`) }
 
 watch(() => route.query.search, (newSearch) => {

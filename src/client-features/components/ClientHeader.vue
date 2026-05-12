@@ -27,12 +27,12 @@
             </button>
           </form>
 
-          <!-- NÚT GIỎ HÀNG NỔI BẬT -->
           <router-link to="/cart" class="btn btn-cart d-flex align-items-center gap-2 rounded-pill px-3 py-2 position-relative text-decoration-none">
             <CIcon icon="cil-cart" size="lg" />
             <span class="fw-bold d-none d-md-inline-block small text-uppercase">Giỏ hàng</span>
-            <span v-if="cartCount > 0" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-hl-red pulse-badge shadow-sm">
-              {{ cartCount }}
+
+            <span v-if="totalCount > 0" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-hl-red pulse-badge shadow-sm">
+              {{ totalCount }}
               <span class="visually-hidden">sản phẩm</span>
             </span>
           </router-link>
@@ -43,15 +43,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCartStore } from '../../stores/cart'
+// Thay thế Pinia store bằng useCart composable
+import { useCart } from '../composables/useCart'
 
 const router = useRouter()
-const cartStore = useCartStore()
 const headerSearchQuery = ref('')
 
-const cartCount = computed(() => cartStore.items.reduce((total, item) => total + item.quantity, 0))
+// Lấy biến totalCount (tự động cập nhật nhờ computed bên trong composable)
+const { totalCount } = useCart()
 
 const handleSearchSubmit = () => {
   if (headerSearchQuery.value.trim()) {

@@ -61,7 +61,7 @@
             <div class="qty-control">
               <button class="qty-btn" @click="decrease" :disabled="quantity <= 1">−</button>
               <span class="qty-value">{{ quantity }}</span>
-              <button class="qty-btn" @click="increase" :disabled="quantity >= product.availability">+</button>
+              <button class="qty-btn" @click="increase" :disabled="quantity >= (product.availability || 99)">+</button>
             </div>
           </div>
 
@@ -113,7 +113,6 @@
 </template>
 
 <script setup lang="ts">
-/* === GIỮ NGUYÊN HOÀN TOÀN LOGIC JAVASCRIPT CỦA BẠN BÊN TRONG THẺ <script> === */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../services/api'
@@ -121,6 +120,8 @@ import { useCart } from '../composables/useCart'
 
 const route = useRoute()
 const router = useRouter()
+
+// Sử dụng composable đồng bộ LocalStorage 'hincoffee_cart'
 const { addToCart, totalCount, isInCart, getQuantityInCart } = useCart()
 
 const product = ref<any>(null)
@@ -145,38 +146,90 @@ const allImages = computed(() => {
 const formatPrice = (p: number) => p ? p.toLocaleString('vi-VN') : '0'
 
 const fetchProduct = async (id: string | number) => {
-  loading.value = true; product.value = null; relatedProducts.value = []; quantity.value = 1; addedToCart.value = false
+  loading.value = true;
+  product.value = null;
+  relatedProducts.value = [];
+  quantity.value = 1;
+  addedToCart.value = false;
+
   try {
     const res = await fetch(`http://localhost:8900/api/products/${id}`)
     if (!res.ok) throw new Error('Not found')
     const data = await res.json()
-    product.value = data; mainImage.value = data.imageUrl || ''
-    if (isInCart(data.id)) { quantity.value = getQuantityInCart(data.id) }
+
+    // Gán default availability = 99 nếu API không trả về để tránh lỗi NaN
+    data.availability = data.availability ?? 99;
+
+    product.value = data;
+    mainImage.value = data.imageUrl || ''
+
+    if (isInCart(data.id)) {
+      quantity.value = getQuantityInCart(data.id)
+    }
+
     if (data.category?.id) {
       const rel = await api.getProducts({ categoryId: data.category.id, page: 0, size: 5 })
       const content = rel?.data?.content ?? rel?.content ?? []
       relatedProducts.value = Array.isArray(content) ? content.filter((p: any) => p.id !== data.id).slice(0, 4) : []
     }
-  } catch (e) { console.error(e); product.value = null }
-  finally { loading.value = false }
+  } catch (e) {
+    console.error(e);
+    product.value = null
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleAddToCart = () => {
   if (!product.value || product.value.availability === 0) return
-  addToCart({ id: product.value.id, productName: product.value.productName, price: product.value.price, imageUrl: product.value.imageUrl, availability: product.value.availability }, quantity.value)
-  addedToCart.value = true; setTimeout(() => { addedToCart.value = false }, 3000)
-}
-const handleBuyNow = () => { handleAddToCart(); router.push('/cart') }
-const increase = () => { if (product.value && quantity.value < product.value.availability) quantity.value++ }
-const decrease = () => { if (quantity.value > 1) quantity.value-- }
-const goToProduct = (id: number) => { router.push(`/products/${id}`) }
 
-watch(() => route.params.id, (id) => { if (id) fetchProduct(id as string) })
-onMounted(() => { if (route.params.id) fetchProduct(route.params.id as string) })
+  // Format object product chuẩn để đưa vào cart
+  const cartItem = {
+    id: product.value.id,
+    productName: product.value.productName,
+    price: product.value.price,
+    imageUrl: product.value.imageUrl,
+    availability: product.value.availability
+  }
+
+  addToCart(cartItem, quantity.value)
+
+  addedToCart.value = true;
+  setTimeout(() => { addedToCart.value = false }, 3000)
+}
+
+const handleBuyNow = () => {
+  handleAddToCart();
+  router.push('/cart')
+}
+
+const increase = () => {
+  if (product.value && quantity.value < product.value.availability) {
+    quantity.value++
+  }
+}
+
+const decrease = () => {
+  if (quantity.value > 1) {
+    quantity.value--
+  }
+}
+
+const goToProduct = (id: number) => {
+  router.push(`/products/${id}`)
+}
+
+watch(() => route.params.id, (id) => {
+  if (id) fetchProduct(id as string)
+})
+
+onMounted(() => {
+  if (route.params.id) fetchProduct(route.params.id as string)
+})
 </script>
 
 <style scoped>
-/* Đã thay đổi toàn bộ biến CSS sang nhận diện thương hiệu HinCoffee */
+/* Giữ nguyên toàn bộ CSS của bạn */
 .detail-page {
   --bg-color: #FBF8F5;
   --ink: #3A2318;

@@ -1,10 +1,8 @@
 <template>
   <div class="home-page-content overflow-hidden page-bg" style="margin-top: 100px;">
 
-    <!-- 1. HERO BANNER -->
     <section class="position-relative overflow-hidden hero-section">
         <img v-if="banners.length > 0" :src="banners[0].imageUrl" class="position-absolute w-100 h-100 object-fit-cover zoom-anim"/>
-        <!-- Default fallback image if no banner -->
         <img v-else src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80" class="position-absolute w-100 h-100 object-fit-cover zoom-anim"/>
 
         <div class="position-absolute top-0 start-0 w-100 h-100 bg-overlay-premium"></div>
@@ -28,12 +26,10 @@
         </div>
     </section>
 
-    <!-- 2. TINH HOA CÀ PHÊ (Về chúng tôi) -->
     <section class="py-6 about-section position-relative">
       <div class="container">
         <div class="row align-items-center g-5">
           <div class="col-lg-6 position-relative fade-in-up">
-            <!-- Asymmetric image layout -->
             <div class="img-composition">
               <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Cà phê" class="img-main rounded-5 shadow-lg object-fit-cover"/>
               <img src="https://images.unsplash.com/photo-1559525839-b184a4d698c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="Hạt cà phê" class="img-float rounded-circle shadow-lg border border-4 border-white object-fit-cover"/>
@@ -71,7 +67,6 @@
       </div>
     </section>
 
-    <!-- 3. THỰC ĐƠN NỔI BẬT -->
     <section class="py-6 menu-section bg-white position-relative">
       <div class="container">
         <div class="d-flex flex-column align-items-center justify-content-center mb-5 section-title fade-in-up text-center">
@@ -89,7 +84,6 @@
                 <div class="ratio ratio-1x1 bg-light">
                   <img :src="product.imageUrl" class="object-fit-cover w-100 h-100 transition-transform" />
                 </div>
-                <!-- Nút thêm vào giỏ ẩn hiện khi hover -->
                 <div class="cart-action-overlay d-flex align-items-center justify-content-center">
                   <button class="btn btn-hl-red rounded-circle p-0 d-flex align-items-center justify-content-center shadow-lg hover-scale" style="width: 45px; height: 45px;" @click.stop="addToCart(product)">
                     <CIcon icon="cil-basket" size="lg"/>
@@ -109,12 +103,11 @@
         </div>
 
         <div class="text-center mt-5 fade-in-up delay-2">
-          <button class="btn btn-outline-hl-brown rounded-pill px-5 py-3 fw-bold hover-lift">Xem toàn bộ Menu</button>
+          <button class="btn btn-outline-hl-brown rounded-pill px-5 py-3 fw-bold hover-lift" @click="$router.push('/products')">Xem toàn bộ Menu</button>
         </div>
       </div>
     </section>
 
-    <!-- 4. KHÔNG GIAN QUÁN (Parallax Banner) -->
     <section class="py-6 bg-dark text-white position-relative parallax-section" style="background-image: url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');">
       <div class="position-absolute top-0 start-0 w-100 h-100 bg-overlay-dark-heavy"></div>
       <div class="container py-5 position-relative z-1 text-center fade-in-up">
@@ -145,8 +138,7 @@
       </div>
     </section>
 
-    <!-- 5. BÀI VIẾT / CHUYỆN NHÀ -->
-  <section class="py-6 about-section">
+    <section class="py-6 about-section">
   <div class="container">
     <div class="d-flex flex-wrap align-items-end justify-content-between mb-5 section-title fade-in-up">
       <div class="mb-3 mb-md-0">
@@ -194,11 +186,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCartStore } from '../../stores/cart'
 import api from '../services/api'
+import { useCart } from '../composables/useCart'
 
 const router = useRouter()
-const cartStore = useCartStore()
+
+// Dùng useCart thay thế cartStore
+const { addToCart: addProductToCart } = useCart()
 
 const banners = ref<any[]>([])
 const products = ref<any[]>([])
@@ -210,8 +204,13 @@ const goToProduct = (id: number) => router.push(`/products/${id}`)
 const goToArticle = (id: number) => router.push(`/articles/${id}`)
 
 const addToCart = (product: any) => {
-  cartStore.addToCart(product)
-  // Thay thế alert bằng Toast UI đẹp hơn nếu dự án của bạn có (ví dụ: vue-toastification)
+  // Gán availability mặc định nếu API bị thiếu để tránh lỗi NaN ở LocalStorage
+  const cartItem = {
+    ...product,
+    availability: product.availability || 99
+  }
+
+  addProductToCart(cartItem)
   alert('Đã thêm ' + product.productName + ' vào giỏ hàng!')
 }
 
